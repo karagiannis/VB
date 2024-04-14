@@ -201,6 +201,7 @@ Sub LäsInBalansrapport()
     
     LäsInResultatrapport targetSheet, rot_mapp, mapp, file_start_date, file_end_date
     LäsInHuvudbok targetSheet, rot_mapp, mapp, file_start_date, file_end_date
+    LäsInVerifikationslista targetSheet, rot_mapp, mapp, file_start_date, file_end_date
     Debug.Print "test"
 End Sub
 
@@ -432,6 +433,8 @@ Sub LäsInResultatrapport(ByVal targetSheet As Worksheet, ByVal rot_mapp As Strin
     targetSheet.Cells(2, 7).Value = startRow
     lastRow = targetSheet.Cells(targetSheet.Rows.Count, 1).End(xlUp).Row
     targetSheet.Cells(2, 8).Value = lastRow
+    targetSheet.Cells(2, 6).Value = "Resultatrapport"
+    
     
 
     Debug.Print "test"
@@ -576,6 +579,151 @@ Sub LäsInHuvudbok(ByVal targetSheet As Worksheet, ByVal rot_mapp As String, ByVa
     targetSheet.Cells(3, 7).Value = startRow
     lastRow = targetSheet.Cells(targetSheet.Rows.Count, 1).End(xlUp).Row
     targetSheet.Cells(3, 8).Value = lastRow
+    targetSheet.Cells(3, 6).Value = "Huvudbok"
+    
+
+    Debug.Print "test"
+End Sub
+
+Sub LäsInVerifikationslista(ByVal targetSheet As Worksheet, ByVal rot_mapp As String, ByVal mapp As String, ByVal start_date As Date, ByVal end_date As Date)
+    Dim filnamn As String
+    Dim bladNamn As String
+    Dim kolumnIndex As Integer
+    Dim filnamnsArray() As String
+    Dim verifikationslistaArray() As String
+    Dim xlsxArray() As String
+    Dim i As Integer
+    Dim j As Integer
+
+    
+    
+    
+    ' Skriv ut sökvägen till mappen
+    Debug.Print rot_mapp & "\" & mapp
+    
+    ' Återställ arrayen för att undvika eventuellt tidigare innehåll
+    ReDim filnamnsArray(0)
+    
+    ' Läs in filnamnen som ligger i mappen och lägg filnamnen i en array
+    filnamn = Dir(rot_mapp & "\" & mapp & "\")
+    i = 0
+    Do While filnamn <> "" ' Loopa så länge det finns filnamn i mappen
+        Debug.Print filnamn
+        ' Lägg till filnamnet i arrayen
+        ReDim Preserve filnamnsArray(i)
+        filnamnsArray(i) = filnamn
+        i = i + 1
+        ' Läs nästa filnamn
+        filnamn = Dir
+    Loop
+    
+    i = 0
+    j = 0
+    Debug.Print "After while loop completed"
+    
+    ' Sök efter filnamn som börjar med "Balans" och lägg dem i en annan array
+    For j = LBound(filnamnsArray) To UBound(filnamnsArray)
+        If Left(filnamnsArray(j), 12) = "Verifikation" Then
+            ReDim Preserve verifikationslistaArray(i)
+            verifikationslistaArray(i) = filnamnsArray(j)
+            i = i + 1
+        End If
+    Next j
+     Debug.Print "verifikationslistaArray filled"
+    ' Skriv ut alla filnamn som börjar med "Huvudbok" i arrayen
+     If Not IsEmpty(verifikationslistaArray) Then
+        For i = LBound(verifikationslistaArray) To UBound(verifikationslistaArray)
+            Debug.Print verifikationslistaArray(i)
+        Next i
+    Else
+        Debug.Print "Inga verifikationslistafiler hittades."
+    End If
+
+     
+    i = 0
+    j = 0
+    Debug.Print "Before xlsarray filling"
+    ' Sök efter filnamn som slutar med ".xlsx" och lägg dem i en annan array
+    For j = LBound(verifikationslistaArray) To UBound(verifikationslistaArray)
+        If Right(verifikationslistaArray(j), 5) = ".xlsx" Then
+            ReDim Preserve xlsxArray(i)
+            xlsxArray(i) = verifikationslistaArray(j)
+            i = i + 1
+        End If
+    Next j
+    Debug.Print "xlsarray filled"
+    ' Skriv ut alla filnamn som slutar med ".xlsx" i arrayen
+    For i = LBound(xlsxArray) To UBound(xlsxArray)
+       Debug.Print xlsxArray(i)
+     Next i
+    
+
+
+    ' Skriv ut alla filnamn som uppfyller villkoren i arrayen
+    Dim parts() As String
+    Dim hittad As Boolean
+    Dim date_parts() As String
+    hittad = False
+    Dim file_start_date As Date
+    Dim file_end_date As Date
+    Dim rätt_verifikationslista As String
+    
+    Dim year_start As Integer
+    Dim month_start As Integer
+    Dim day_start As Integer
+    Dim year_end As Integer
+    Dim month_end As Integer
+    Dim day_end As Integer
+    
+    For i = LBound(xlsxArray) To UBound(xlsxArray)
+        Debug.Print xlsxArray(i)
+        rätt_verifikationslista = xlsxArray(i)
+    Next i
+        
+        
+    ' Dim monthAbbreviation
+    ' monthAbbreviation = Left(MonthName(month_start), 3)
+
+    ' Debug.Print monthAbbreviation
+  
+    
+    ' Skapa sökvägen till filen
+    Dim path As String
+    path = rot_mapp & "\" & mapp & "\" & rätt_verifikationslista
+    Debug.Print "Sökvägen till verifikationslistan är:"
+    Debug.Print path
+    
+    
+    ' Öppna resultarrapporten
+    Dim verifikationslistaWorkbook As Workbook
+    Set verifikationslistaWorkbook = Workbooks.Open(path)
+    Dim verifikationslistaSheet As Worksheet
+    Set verifikationslistaSheet = verifikationslistaWorkbook.Sheets(1) ' Antag att huvudboken är på första arket
+
+   
+    targetSheet.Activate
+    
+    
+    Dim lastRow As Long
+    lastRow = targetSheet.Cells(targetSheet.Rows.Count, 1).End(xlUp).Row
+    Debug.Print "Sista raden för huvudboken: " & lastRow
+    
+    ' Beräkna var du ska börja kopiera huvudboken
+    Dim startRow As Long
+    startRow = lastRow + 5 ' 5 rader under den sista raden i balansrapporten
+    Debug.Print "verifikationslistan skrivs in vid rad " & startRow
+    
+    
+    ' Kopiera verifikationslista till det angivna området
+    verifikationslistaSheet.UsedRange.Copy targetSheet.Cells(startRow, 1) ' Börja i den första kolumnen på startRow
+    
+    ' Stäng resultatrapporten utan att spara ändringar
+    verifikationslistaWorkbook.Close SaveChanges:=False
+    
+    targetSheet.Cells(4, 7).Value = startRow
+    lastRow = targetSheet.Cells(targetSheet.Rows.Count, 1).End(xlUp).Row
+    targetSheet.Cells(4, 8).Value = lastRow
+    targetSheet.Cells(4, 6).Value = "Verifikationslistan"
     
 
     Debug.Print "test"
