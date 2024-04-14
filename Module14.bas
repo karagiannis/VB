@@ -244,9 +244,9 @@ Sub InfogaHeaders(ByVal targetSheet As Worksheet)
            
            ' Infoga kolumnheaders med fetstil från kolumn C
            Set headerRange = targetSheet.Range("C" & i)
-           headerRange.Resize(1, 8).Value = Array("Ing balans", "Ing saldo", "Period", "Period beräknad", _
-                                                   "Utg balans", "Utg balans beräknad", "Överensstämmer", "Beräkningsunderlag")
-           headerRange.Resize(1, 8).Font.Bold = True
+           headerRange.Resize(1, 17).Value = Array("Ing balans", "Ing saldo", "Period", "Period beräknad", _
+                                                   "Utg balans", "Utg balans beräknad", "Överensstämmer", "Beräkningsunderlag", "1", "2", "3", "4", "5", "6", "7", "IB koll", "Saldo koll")
+           headerRange.Resize(1, 17).Font.Bold = True
            
            
         End If
