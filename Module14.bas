@@ -185,6 +185,7 @@ Sub LäsInBalansrapport()
 
    
     targetSheet.Activate
+    TaBortKolumner targetSheet
 
     ' Kopiera innehållet från den enda fliken i balansWorkbook till targetSheet
     balansWorkbook.Sheets(1).UsedRange.Copy targetSheet.Range("A1")
@@ -204,6 +205,11 @@ Sub LäsInBalansrapport()
     LäsInVerifikationslista targetSheet, rot_mapp, mapp, file_start_date, file_end_date
     Debug.Print "test"
 End Sub
+Sub TaBortKolumner(ws As Worksheet)
+    ' Ta bort kolumnerna A till J
+   ws.Columns("A:J").Clear
+End Sub
+
 
 Sub JusteraKolumnBredden(ByVal targetSheet As Worksheet)
     Dim columnRange As Range
@@ -244,8 +250,10 @@ Sub InfogaHeaders(ByVal targetSheet As Worksheet)
            
            ' Infoga kolumnheaders med fetstil från kolumn C
            Set headerRange = targetSheet.Range("C" & i)
-           headerRange.Resize(1, 17).Value = Array("Ing balans", "Ing saldo", "Period", "Period beräknad", _
-                                                   "Utg balans", "Utg balans beräknad", "Överensstämmer", "Beräkningsunderlag", "1", "2", "3", "4", "5", "6", "7", "IB koll", "Saldo koll")
+           headerRange.Resize(1, 17).Value = Array("Ing balans", "Ing saldo", "Period", _
+                                                   "Utg balans", "Period beräknad", _
+                                                   "Utg balans beräknad", "Överensstämmer", _
+                                                   "Beräkningsunderlag", "1", "2", "3", "4", "5", "6", "7", "IB koll", "Saldo koll")
            headerRange.Resize(1, 17).Font.Bold = True
            
            
