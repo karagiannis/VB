@@ -88,35 +88,42 @@ Sub TestaIB()
         Debug.Print "Rad " & i & ":" & "  (1.) " & ibData(i, 1) & "    " & ibData(i, 2) & "   " & ibData(i, 3)
     Next i
     
-    ' Iterera över varje rad i filteredData
-    For i = LBound(filteredData, 1) To UBound(filteredData, 1)
-        ' Kontrollera om värdet i första kolumnen är numeriskt
-        If IsNumeric(filteredData(i, 1)) Then
-            ' Sök motsvarande kontonummer i kolumn A på fliken "IB"
-            For j = LBound(ibData, 1) To UBound(ibData, 1)
-                If ibData(j, 1) = filteredData(i, 1) Then
-                    ' Om kontonumret matchar, läs in IB-värdet från kolumn C
-                    ibValue = ibData(j, 3)
-                    ' Jämför IB-värdet med andra kolumnen i filteredData
-                    If ibValue = filteredData(i, 2) Then
-                        ' Om värdena är lika, skriv IB-värdet till kolumn R på targetSheet
-                        targetSheet.Cells(filteredData(i, 3), 18).Value = ibValue ' Kolumn R = 18
-                        ' Skapa en hyperlänk från balansrapportens IB-värde till fliken "IB" och motsvarande konto
-                        Debug.Print "Anchor cell: " & targetSheet.Cells(filteredData(i, 3), 18).Address
-                        Debug.Print "IbSheet name: " & IbSheet.Name
-                        Debug.Print "SubAddress: '" & IbSheet.Name & "'!D" & j
-                        Debug.Print "TextToDisplay: " & ibValue
-                        targetSheet.Select
-                        targetSheet.Cells(filteredData(i, 3), 18).Select
+Dim anchorCell As Range
+Dim ibValue As Double
 
-                        targetSheet.Hyperlinks.Add Anchor:=targetSheet.Cells(filteredData(i, 3), 18), Address:="", SubAddress:="" & IbSheet.Name & "!D" & j, TextToDisplay:=ibValue
-                        Exit For ' Gå till nästa rad i filteredData
-                    End If
+
+' Iterera över varje rad i filteredData
+For i = LBound(filteredData, 1) To UBound(filteredData, 1)
+    ' Kontrollera om värdet i första kolumnen är numeriskt
+    If IsNumeric(filteredData(i, 1)) Then
+        ' Sök motsvarande kontonummer i kolumn A på fliken "IB"
+        For j = LBound(ibData, 1) To UBound(ibData, 1)
+            If ibData(j, 1) = filteredData(i, 1) Then
+                ' Om kontonumret matchar, läs in IB-värdet från kolumn C
+                ibValue = ibData(j, 3)
+                ' Jämför IB-värdet med andra kolumnen i filteredData
+                If ibValue = filteredData(i, 2) Then
+                    ' Om värdena är lika, skriv IB-värdet till kolumn R på targetSheet
+                    targetSheet.Cells(filteredData(i, 3), 18).Value = ibValue ' Kolumn R = 18
+                    
+                    ' Ange den aktuella cellen som ankelpunkt
+                    Set anchorCell = targetSheet.Cells(filteredData(i, 3), 18)
+                    
+                     Dim ibVariant As Variant
+                     ibVariant = ibValue
+                     Dim ibString As String
+                     ibString = ibVariant
+                    
+                    ' Lägg till hyperlänk till ankelpunkten med den angivna SubAddress och ibValue som text att visa
+                    targetSheet.Hyperlinks.Add Anchor:=anchorCell, Address:="", SubAddress:="'" & IbSheet.Name & "'!C" & j, TextToDisplay:=ibString
+                    
+                    Exit For ' Gå till nästa rad i filteredData
                 End If
-            Next j
-        End If
-    Next i
-    
+            End If
+        Next j
+    End If
+Next i
+  
      
     
 End Sub
