@@ -8,6 +8,11 @@ Sub TestaIB()
     Dim targetSheet As Worksheet
     Dim filteredData() As Variant ' Dynamiskt tvådimensionellt array för filtrerad data
     Dim lastRow As Long
+    Dim i As Long, j As Long
+    Dim IbSheet As Worksheet
+    Dim ibData() As Variant
+    Dim ibRowsCount As Long
+    
     
     ' Ange den aktuella arbetsboken
     Set ws = ThisWorkbook.Sheets("Sheet1")
@@ -46,7 +51,7 @@ Sub TestaIB()
     ' Redimensionera den dynamiska arrayen till antalet rader i dataområdet
     ' ReDim Preserve filteredData(lastRow)
     ' ReDim filteredData(lastRow, 3)
-    ReDim filteredData(1 To lastRow, 1 To 2)
+    ReDim filteredData(1 To lastRow, 1 To 3)
 
     
     ' Dim upperBound As Long
@@ -57,7 +62,62 @@ Sub TestaIB()
     ' Anropa funktionen ReadAndFilterData för att filtrera data på månadsfliken
     filteredData = ReadAndFilterData(targetSheet)
     
-    Debug.Print filteredData(1, 1)
+     ' Skriv ut innehållet i variabeln filteredData för att verifiera om den är tom eller inte
+    Debug.Print "Innehållet i variabeln filteredData:"
+    For i = LBound(filteredData, 1) To UBound(filteredData, 1)
+        Debug.Print "Rad " & i & ":" & "  (1.) " & filteredData(i, 1) & "  (2.) " & filteredData(i, 2) & " rad nummer: " & filteredData(i, 3)
+    Next i
+    
+    ' Hitta fliken för de ingående balanserna
+    Set IbSheet = ThisWorkbook.Sheets("IB")
+    
+    'Antal rader i IB -fliken
+    ibRowsCount = IbSheet.Cells(IbSheet.Rows.Count, "A").End(xlUp).Row + 1
+    Debug.Print "ibRowsCount: " & ibRowsCount
+    
+    ' Dimensionera arrayen
+    ReDim ibData(1 To ibRowsCount, 1 To 3)
+    Debug.Print "UBound(ibData, 1): " & UBound(ibData, 1)
+    
+    ' Läs in hela datan från fliken "IB"
+    ibData = IbSheet.Range("A1:C" & ibRowsCount)
+    
+     ' Skriv ut innehållet i variabeln ibData för att verifiera om den är tom eller inte
+    Debug.Print "Innehållet i variabeln ibData:"
+    For i = LBound(ibData, 1) To UBound(ibData, 1)
+        Debug.Print "Rad " & i & ":" & "  (1.) " & ibData(i, 1) & "    " & ibData(i, 2) & "   " & ibData(i, 3)
+    Next i
+    
+    ' Iterera över varje rad i filteredData
+    For i = LBound(filteredData, 1) To UBound(filteredData, 1)
+        ' Kontrollera om värdet i första kolumnen är numeriskt
+        If IsNumeric(filteredData(i, 1)) Then
+            ' Sök motsvarande kontonummer i kolumn A på fliken "IB"
+            For j = LBound(ibData, 1) To UBound(ibData, 1)
+                If ibData(j, 1) = filteredData(i, 1) Then
+                    ' Om kontonumret matchar, läs in IB-värdet från kolumn C
+                    ibValue = ibData(j, 3)
+                    ' Jämför IB-värdet med andra kolumnen i filteredData
+                    If ibValue = filteredData(i, 2) Then
+                        ' Om värdena är lika, skriv IB-värdet till kolumn R på targetSheet
+                        targetSheet.Cells(filteredData(i, 3), 18).Value = ibValue ' Kolumn R = 18
+                        ' Skapa en hyperlänk från balansrapportens IB-värde till fliken "IB" och motsvarande konto
+                        Debug.Print "Anchor cell: " & targetSheet.Cells(filteredData(i, 3), 18).Address
+                        Debug.Print "IbSheet name: " & IbSheet.Name
+                        Debug.Print "SubAddress: '" & IbSheet.Name & "'!D" & j
+                        Debug.Print "TextToDisplay: " & ibValue
+                        targetSheet.Select
+                        targetSheet.Cells(filteredData(i, 3), 18).Select
+
+                        targetSheet.Hyperlinks.Add Anchor:=targetSheet.Cells(filteredData(i, 3), 18), Address:="", SubAddress:="" & IbSheet.Name & "!D" & j, TextToDisplay:=ibValue
+                        Exit For ' Gå till nästa rad i filteredData
+                    End If
+                End If
+            Next j
+        End If
+    Next i
+    
+     
     
 End Sub
 
@@ -96,28 +156,20 @@ Function ReadAndFilterData(ByVal targetSheet As Worksheet) As Variant
     
     j = 1
     ' Skapa den slutgiltiga filteredData-arrayn med rätt storlek
-    ReDim filteredData(1 To lastRow, 1 To 2)
+    ReDim filteredData(1 To lastRow, 1 To 3)
 
     
     ' Loopa igenom varje rad i datan
     For i = 1 To UBound(data, 1)
         ' Kontrollera om det finns en siffra i A-delen av raden
-        If IsNumeric(data(i, 1)) Then
+        If Not IsEmpty(data(i, 1)) And data(i, 1) Like "####" Then
              filteredData(j, 1) = data(i, 1)
              filteredData(j, 2) = data(i, 3)
+             filteredData(j, 3) = i
              j = j + 1
         End If
     Next i
-    
-    
-    ' Skriv ut innehållet i variabeln filteredData för att verifiera om den är tom eller inte
-    Debug.Print "Innehållet i variabeln filteredData:"
-    For i = LBound(filteredData, 1) To UBound(filteredData, 1)
-        Debug.Print "Rad " & i & ":" & "  (1.) " & filteredData(i, 1) & "  (2.) " & filteredData(i, 2)
-    Next i
-        
-    
-    
+       
     ReadAndFilterData = filteredData
     Debug.Print "Returnerar här"
 
