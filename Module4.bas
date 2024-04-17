@@ -92,7 +92,7 @@ Dim ws As Worksheet
     
     ' Skriv över bara rubrikerna och behåll befintliga värden i kolumnerna till höger
     With headerRange
-        .Value = Array("Vernr", "Bokföringsdatum", "Konto", "Benämning", "Ks", "Projnr", _
+        .Value = Array("Vernr", "Bokföringsdatum", "Registreringsdatum", "Konto", "Benämning", "Ks", "Projnr", _
                        "Verifikationstext", "Transaktionsinfo", "Debet", "Kredit", _
                        "Rätt moms", "Konto", "Aktiverad", "Har Flik")
         .Font.Bold = True
@@ -164,6 +164,7 @@ rowIndex = startRow + 1
 
 i = 1 ' Börja från första raden
 Do
+    
     If verifikatSymbol = raderDennaMånad(i, 1) Then
         ' Lägg till det globala Excelradnumret till verifikatRader
         Debug.Print "Before adding rowIndex:", rowIndex
@@ -180,8 +181,8 @@ Do
         ' Färga raderna listade i verifikatRader från kolumn Q till AA med enligt colorBoolean
         For Each radnummer In verifikatRadnummer(verifikatSymbol)
             Debug.Print "radnummer :" & radnummer
-            For Each cell In targetSheet.Range("Q" & radnummer & ":AA" & radnummer)
-                cell.Interior.Color = IIf(color1bool, lightGreen, lightBlue)
+            For Each Cell In targetSheet.Range("Q" & radnummer & ":AA" & radnummer)
+                Cell.Interior.Color = IIf(color1bool, lightGreen, lightBlue)
             Next
         Next
         
@@ -197,10 +198,56 @@ Do
     
     ' Öka indexet för att gå till nästa rad
     i = i + 1
+
 Loop Until i > UBound(raderDennaMånad, 1)
-
-
+For Each radnummer In verifikatRadnummer(verifikatSymbol)
+            Debug.Print "radnummer :" & radnummer
+            For Each Cell In targetSheet.Range("Q" & radnummer & ":AA" & radnummer)
+                Cell.Interior.Color = IIf(color1bool, lightGreen, lightBlue)
+            Next
+        Next
          
 
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+' Rensa dictionaryn för det nuvarande verifikatet
+verifikatSymbol = raderDennaMånad(1, 1)
+i = 1 ' Börja från första raden
+Do
+    
+    If verifikatSymbol = raderDennaMånad(i, 1) Then
+        ' Lägg till det globala Excelradnumret till verifikatRader
+        Debug.Print "Before adding rowIndex:", rowIndex
+        If Not verifikatRadnummer.Exists(verifikatSymbol) Then
+            verifikatRadnummer.Add verifikatSymbol, New Collection
+        End If
+        Debug.Print "Number of elements in Collection:", verifikatRadnummer(verifikatSymbol).Count
+        verifikatRadnummer(verifikatSymbol).Add rowIndex
+        Debug.Print "After adding rowIndex:", rowIndex
+        Debug.Print "Number of elements in Collection:", verifikatRadnummer(verifikatSymbol).Count
+        rowIndex = rowIndex + 1
+    Else
+        ' Nytt verifikat har hittats
+        ' Färga raderna listade i verifikatRader från kolumn Q till AA med enligt colorBoolean
+        For Each radnummer In verifikatRadnummer(verifikatSymbol)
+            targetSheet.Range("AC" & radnummer).Value = targetSheet.Range("T" & radnummer).Value
+        Next
+        
+       
+        
+        ' Rensa dictionaryn för det nuvarande verifikatet
+        verifikatRadnummer.Remove verifikatSymbol
+        
+        verifikatSymbol = raderDennaMånad(i, 1)
+        i = i - 1
+    End If
+    
+    ' Öka indexet för att gå till nästa rad
+    i = i + 1
+
+Loop Until i > UBound(raderDennaMånad, 1)
+ For Each radnummer In verifikatRadnummer(verifikatSymbol)
+        targetSheet.Range("AC" & radnummer).Value = targetSheet.Range("T" & radnummer).Value
+    Next
+         
 
 End Sub
