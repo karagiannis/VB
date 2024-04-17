@@ -163,9 +163,7 @@ rowIndex = startRow + 1
 
 
 i = 1 ' Börja från första raden
-Debug.Print "UBound(raderDennaMånad, 1): " & UBound(raderDennaMånad, 1)
-
-While i <= UBound(raderDennaMånad, 1) ' Fortsätt loopa tills vi har gått igenom alla rader
+Do
     If verifikatSymbol = raderDennaMånad(i, 1) Then
         ' Lägg till det globala Excelradnumret till verifikatRader
         Debug.Print "Before adding rowIndex:", rowIndex
@@ -199,7 +197,7 @@ While i <= UBound(raderDennaMånad, 1) ' Fortsätt loopa tills vi har gått igenom 
     
     ' Öka indexet för att gå till nästa rad
     i = i + 1
-Wend
+Loop Until i > UBound(raderDennaMånad, 1)
 
 
          
