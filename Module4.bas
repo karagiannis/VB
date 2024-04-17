@@ -142,7 +142,7 @@ Dim ws As Worksheet
     Dim color1bool As Boolean
     
     ' Förställ färg och symbol
-    verifikatSymbol = raderDennaMånad(LBound(raderDennaMånad, 1), 1)
+    verifikatSymbol = raderDennaMånad(0, 1)
     color1bool = True
     j = 0
     Dim k As Long ' löpvariabel
