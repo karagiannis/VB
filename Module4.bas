@@ -13,6 +13,12 @@ Dim ws As Worksheet
     Dim i As Long, j As Long
     Dim dataRange As Range
     Dim data() As Variant
+    Dim k As Long ' löpvariabel
+    Dim rowCounter As Long
+    Dim rowIndex As Long
+    Dim color1bool As Boolean ' Definiera en boolean för att hålla reda på färgtoggel
+    Dim verifikatSymbol As String 'Skapa en variabel för att hålla den nuvarande verifikatsymbolen och en variabel för den föregående symbolen.
+    
     
     
     Debug.Print "Inne i TestVerifikationslista()"
@@ -128,53 +134,68 @@ Dim ws As Worksheet
     Dim raderDennaMånad() As Variant
     
     ' Ange området med data
-    Set dataRange = targetSheet.Range("Q" & startRow & ":Q" & lastRow)
-    ReDim Preserve raderDennaMånad(0 To lastRow, 1)
+    Set dataRange = targetSheet.Range("Q" & startRow + 1 & ":Q" & lastRow)
+    ReDim Preserve raderDennaMånad(1 To lastRow, 1)
     
     ' Läs in raderna
     raderDennaMånad = dataRange.Value
-    
-    'Skapa en variabel för att hålla den nuvarande verifikatsymbolen och en variabel för den föregående symbolen.
-    Dim verifikatSymbol As String
-    
-    
-    ' Definiera en boolean för att hålla reda på färgtoggel
-    Dim color1bool As Boolean
+    Debug.Print LBound(raderDennaMånad, 1)
     
     ' Förställ färg och symbol
-    verifikatSymbol = raderDennaMånad(0, 1)
+    verifikatSymbol = raderDennaMånad(1, 1)
     color1bool = True
     j = 0
-    Dim k As Long ' löpvariabel
-    Dim rowCounter As Long
-    
     rowCounter = 0
-    For i = LBound(raderDennaMånad, 1) To UBound(raderDennaMånad, 1)
-        If verifikatSymbol = raderDennaMånad(i, 1) Then
-            ' Lägg till det globala Excelradnumret till verifikatRader
-            verifikatRader(rowCounter) = startRow + i
-            rowCounter = rowCounter + 1
-        Else
-            ' Nytt verifikat har hittats
-            ' Färga raderna listade i verifikatRader från kolumn Q till AA med enligt colorBoolean
-            For k = 0 To rowCounter - 1
-                For Each cell In targetSheet.Range("Q" & verifikatRader(k) & ":AA" & verifikatRader(k))
-                    cell.Interior.Color = IIf(color1bool, color1, color2)
-                Next
-            Next k
-            
-            ' Toggla colorBoolean
-            color1bool = Not color1bool
-            
-            ' Töm verifikatRader arrayen och gör den redo för att ta emot nya rader
-            Erase verifikatRader
-            ReDim verifikatRader(100) ' Återställ storleken på vektorn
-            rowCounter = 0
-            
-            ' Uppdatera verifikatSymbol till den nyhittade symbolen
-            verifikatSymbol = raderDennaMånad(i, 1)
+    rowIndex = startRow + 1
+    Debug.Print "rowIndex" & rowIndex
+    Debug.Print "verifikatSymbol: " & verifikatSymbol
+    
+    ' Skapa en dictionary för att lagra radnummer för varje unikt verifikat
+Dim verifikatRadnummer
+Set verifikatRadnummer = CreateObject("Scripting.Dictionary")
+
+' Förställ färg och symbol
+verifikatSymbol = raderDennaMånad(1, 1)
+color1bool = True
+rowIndex = startRow + 1
+
+
+
+For i = 1 To UBound(raderDennaMånad, 1)
+    If verifikatSymbol = raderDennaMånad(i, 1) Then
+        ' Lägg till det globala Excelradnumret till verifikatRader
+        Debug.Print "Before adding rowIndex:", rowIndex
+        If Not verifikatRadnummer.Exists(verifikatSymbol) Then
+            verifikatRadnummer.Add verifikatSymbol, New Collection
         End If
-    Next i
+        Debug.Print "Number of elements in Collection:", verifikatRadnummer(verifikatSymbol).Count
+        verifikatRadnummer(verifikatSymbol).Add rowIndex
+        Debug.Print "After adding rowIndex:", rowIndex
+        Debug.Print "Number of elements in Collection:", verifikatRadnummer(verifikatSymbol).Count
+        rowIndex = rowIndex + 1
+    Else
+        
+        ' Nytt verifikat har hittats
+        ' Färga raderna listade i verifikatRader från kolumn Q till AA med enligt colorBoolean
+        For Each radnummer In verifikatRadnummer(verifikatSymbol)
+            Debug.Print "radnummer :" & radnummer
+            For Each cell In targetSheet.Range("Q" & radnummer & ":AA" & radnummer)
+                cell.Interior.Color = IIf(color1bool, lightGreen, lightBlue)
+            Next
+        Next
+        
+        ' Toggla colorBoolean
+        color1bool = Not color1bool
+        
+        ' Rensa dictionaryn för det nuvarande verifikatet
+        verifikatRadnummer.Remove verifikatSymbol
+        
+        verifikatSymbol = raderDennaMånad(i + 1, 1)
+        
+       
+    End If
+Next i
+
 
          
 
