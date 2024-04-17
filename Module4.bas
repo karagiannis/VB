@@ -161,7 +161,11 @@ rowIndex = startRow + 1
 
 
 
-For i = 1 To UBound(raderDennaMånad, 1)
+
+i = 1 ' Börja från första raden
+Debug.Print "UBound(raderDennaMånad, 1): " & UBound(raderDennaMånad, 1)
+
+While i <= UBound(raderDennaMånad, 1) ' Fortsätt loopa tills vi har gått igenom alla rader
     If verifikatSymbol = raderDennaMånad(i, 1) Then
         ' Lägg till det globala Excelradnumret till verifikatRader
         Debug.Print "Before adding rowIndex:", rowIndex
@@ -174,7 +178,6 @@ For i = 1 To UBound(raderDennaMånad, 1)
         Debug.Print "Number of elements in Collection:", verifikatRadnummer(verifikatSymbol).Count
         rowIndex = rowIndex + 1
     Else
-        
         ' Nytt verifikat har hittats
         ' Färga raderna listade i verifikatRader från kolumn Q till AA med enligt colorBoolean
         For Each radnummer In verifikatRadnummer(verifikatSymbol)
@@ -190,11 +193,13 @@ For i = 1 To UBound(raderDennaMånad, 1)
         ' Rensa dictionaryn för det nuvarande verifikatet
         verifikatRadnummer.Remove verifikatSymbol
         
-        verifikatSymbol = raderDennaMånad(i + 1, 1)
-        
-       
+        verifikatSymbol = raderDennaMånad(i, 1)
+        i = i - 1
     End If
-Next i
+    
+    ' Öka indexet för att gå till nästa rad
+    i = i + 1
+Wend
 
 
          
