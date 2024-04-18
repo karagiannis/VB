@@ -251,18 +251,20 @@ Loop Until i > UBound(raderDennaMånad, 1)
     Next
 '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
-Dim sellAccount As Long
-Dim vatAccount As Long
-Dim foundSell As Boolean
-Dim foundVAT As Boolean
-Dim foundVATcodeError As Boolean
-foundSell = False
-foundSellVAT = False
-foundBuyVAT = False
-Dim a As Boolean, b As Boolean, c As Boolean
-a = False
-b = False
-c = False
+' Deklarera variabler för tillstånd
+Const start_state = 0
+Const sell_state = 1
+Const buy_moms_state = 2
+Const sell_moms_state = 3
+Const err_state = 4
+Const OK_state = 5
+Const momsrapport_found_state = 6
+
+
+' Initialisera tillståndet
+Dim state
+state = start_state
+
 
 
 ' Rensa dictionaryn för det nuvarande verifikatet
@@ -285,47 +287,54 @@ Do
     Else
         ' Nytt verifikat har hittats
         For Each radnummer In verifikatRadnummer(verifikatSymbol)
-        
-                ' Kontrollera om intäktskonto (3###) finns i kolumn T
-            If targetSheet.Range("T" & radnummer).Value Like "3###" Then
-                foundSell = True
-                a = foundSell
-            End If
-            
-            ' Kontrollera om moms 2611 finns i kolumn AA
-            If targetSheet.Range("T" & radnummer).Value Like "2611" Then
-                ' Om vi har hittat ett intäktskonto och moms 2611, markera detta som korrekt momsredovisning
-                    ' Hittade moms 2611
-                    foundSellVAT = True
-                    b = foundSellVAT
-            End If
-            targetSheet.Range("AB" & radnummer).Value = "OK"
-            
-            ' Om moms 264# finns, markera detta som felaktig momsredovisning
-            If targetSheet.Range("T" & radnummer).Value Like "264#" Then
-                ' Hittade felaktig moms 264# som ska vara för inköp
-                foundBuyVAT = True
-                c = foundBuyVAT
-            End If
-            
-            If ((a And b And Not (c)) Or (Not (a) And Not (b) And c) Or (Not (a) And b And c)) Then
-                targetSheet.Range("AB" & radnummer).Value = "OK"
-            Else
-                targetSheet.Range("AB" & radnummer).Value = "NOK"
-            End If
-            
+            Debug.Print "Radnummer :" & radnummer
+            Select Case state
+                Case start_state
+                    If targetSheet.Range("T" & radnummer).Value Like "3###" Then
+                        state = sell_state
+                    ElseIf targetSheet.Range("T" & radnummer).Value Like "264#" Then
+                        state = buy_moms_state
+                    ElseIf targetSheet.Range("T" & radnummer).Value Like "2611" Then
+                        state = sell_moms_state
+                    ElseIf targetSheet.Range("T" & radnummer).Value Like "2610" Then
+                        state = err_state
+                    End If
+                    GoTo Out
+                Case sell_state
+                    If targetSheet.Range("T" & radnummer).Value Like "264#" Then
+                        state = err_state
+                    ElseIf targetSheet.Range("T" & radnummer).Value Like "2611" Then
+                        state = OK_state
+                    End If
+                    GoTo Out
+                Case buy_moms_state
+                    If targetSheet.Range("T" & radnummer).Value Like "2611" Then
+                        state = momsrapport_found_state
+                    ElseIf targetSheet.Range("T" & radnummer).Value Like "3###" Then
+                        state = err_state
+                    End If
+                    GoTo Out
+                Case sell_moms_state
+                    If targetSheet.Range("T" & radnummer).Value Like "264#" Then
+                        state = momsrapport_found_state
+                    ElseIf targetSheet.Range("T" & radnummer).Value Like "3###" Then
+                        state = OK_state
+                    End If
+            End Select
+Out:
+                If state = OK_state Then
+                    targetSheet.Range("AB" & radnummer).Value = "OK"
+                ElseIf state = err_state Then
+                    targetSheet.Range("AB" & radnummer).Value = "NOK"
+                ElseIf state = momsrapport_found_state Then
+                    targetSheet.Range("AB" & radnummer).Value = "moms_rapport"
+                End If
                 
-            
-            
+                 
         Next
         
         ' Återställ variabler för nästa verifikat
-        foundSell = False
-        foundSellVAT = False
-        foundBuyVAT = False
-        a = False
-        b = False
-        c = False
+         state = start_state
         
         ' Rensa dictionaryn för det nuvarande verifikatet
         verifikatRadnummer.Remove verifikatSymbol
@@ -343,85 +352,49 @@ Loop Until i > UBound(raderDennaMånad, 1)
 ' För den sista verifikatposten
 For Each radnummer In verifikatRadnummer(verifikatSymbol)
 
-               ' Kontrollera om intäktskonto (3###) finns i kolumn T
-        If targetSheet.Range("T" & radnummer).Value Like "3###" Then
-            foundSell = True
-            a = foundSell
-        End If
-        
-        ' Kontrollera om moms 2611 finns i kolumn AA
-        If targetSheet.Range("T" & radnummer).Value Like "2611" Then
-            ' Om vi har hittat ett intäktskonto och moms 2611, markera detta som korrekt momsredovisning
-                ' Hittade moms 2611
-                foundSellVAT = True
-                b = foundSellVAT
-        End If
-        targetSheet.Range("AB" & radnummer).Value = "OK"
-        
-        ' Om moms 264# finns, markera detta som felaktig momsredovisning
-        If targetSheet.Range("T" & radnummer).Value Like "264#" Then
-            ' Hittade felaktig moms 264# som ska vara för inköp
-            foundBuyVAT = True
-            c = foundBuyVAT
-        End If
-        
-        If ((a And b And Not (c)) Or (Not (a) And Not (b) And c) Or (Not (a) And b And c)) Then
-            targetSheet.Range("AB" & radnummer).Value = "OK"
-        Else
-            targetSheet.Range("AB" & radnummer).Value = "NOK"
-        End If
-            
-
-Next
-
-End Sub
-
-' Deklarera variabler för tillstånd
-Const start_state = 0
-Const sell_state = 1
-Const buy_moms_state = 2
-Const sell_moms_state = 3
-Const err_state = 4
-Const OK_state = 5
-Const momsrapport_found_state = 6
-
-' Initialisera tillståndet
-Dim state
-state = start_state
-
-' Loopa genom rader
-For Each rad In verifikatRadnummer(verifikatSymbol)
     Select Case state
         Case start_state
-            If rad Innehåller "3###" Then
+            If targetSheet.Range("T" & radnummer).Value Like "3###" Then
                 state = sell_state
-            ElseIf rad Innehåller "264#" Then
+            ElseIf targetSheet.Range("T" & radnummer).Value Like "264#" Then
                 state = buy_moms_state
-            ElseIf rad Innehåller "2611" Then
+            ElseIf targetSheet.Range("T" & radnummer).Value Like "2611" Then
                 state = sell_moms_state
-            Else
+            ElseIf targetSheet.Range("T" & radnummer).Value Like "2610" Then
                 state = err_state
             End If
         Case sell_state
-            If rad Innehåller "264#" Then
+            If targetSheet.Range("T" & radnummer).Value Like "264#" Then
                 state = err_state
-            ElseIf rad Innehåller "2611" Then
+            ElseIf targetSheet.Range("T" & radnummer).Value Like "2611" Then
                 state = OK_state
             End If
         Case buy_moms_state
-            If rad Innehåller "2611" Then
+            If targetSheet.Range("T" & radnummer).Value Like "2611" Then
                 state = momsrapport_found_state
-            ElseIf rad Innehåller "264#" Then
-                state = buy_moms_state
-            ElseIf rad Innehåller "3###" Then
+            ElseIf targetSheet.Range("T" & radnummer).Value Like "3###" Then
                 state = err_state
             End If
         Case sell_moms_state
-            If rad Innehåller "264#" Then
+            If targetSheet.Range("T" & radnummer).Value Like "264#" Then
                 state = momsrapport_found_state
-            ElseIf rad Innehåller "3###" Then
+            ElseIf targetSheet.Range("T" & radnummer).Value Like "3###" Then
                 state = OK_state
             End If
     End Select
+            
+            If state = OK_state Then
+                targetSheet.Range("AB" & radnummer).Value = "OK"
+            ElseIf state = err_state Then
+                targetSheet.Range("AB" & radnummer).Value = "NOK"
+            ElseIf state = momsrapport_found_state Then
+                targetSheet.Range("AB" & radnummer).Value = "moms_rapport"
+            End If
+
 Next
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+
+
+End Sub
 
