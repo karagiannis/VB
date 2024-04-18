@@ -211,6 +211,7 @@ For Each radnummer In verifikatRadnummer(verifikatSymbol)
 '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 ' Rensa dictionaryn för det nuvarande verifikatet
 verifikatSymbol = raderDennaMånad(1, 1)
+rowIndex = startRow + 1
 i = 1 ' Börja från första raden
 Do
     
@@ -248,6 +249,179 @@ Loop Until i > UBound(raderDennaMånad, 1)
  For Each radnummer In verifikatRadnummer(verifikatSymbol)
         targetSheet.Range("AC" & radnummer).Value = targetSheet.Range("T" & radnummer).Value
     Next
-         
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+Dim sellAccount As Long
+Dim vatAccount As Long
+Dim foundSell As Boolean
+Dim foundVAT As Boolean
+Dim foundVATcodeError As Boolean
+foundSell = False
+foundSellVAT = False
+foundBuyVAT = False
+Dim a As Boolean, b As Boolean, c As Boolean
+a = False
+b = False
+c = False
+
+
+' Rensa dictionaryn för det nuvarande verifikatet
+verifikatSymbol = raderDennaMånad(1, 1)
+rowIndex = startRow + 1
+i = 1 ' Börja från första raden
+Do
+    
+    If verifikatSymbol = raderDennaMånad(i, 1) Then
+        ' Lägg till det globala Excelradnumret till verifikatRader
+        Debug.Print "Before adding rowIndex:", rowIndex
+        If Not verifikatRadnummer.Exists(verifikatSymbol) Then
+            verifikatRadnummer.Add verifikatSymbol, New Collection
+        End If
+        Debug.Print "Number of elements in Collection:", verifikatRadnummer(verifikatSymbol).Count
+        verifikatRadnummer(verifikatSymbol).Add rowIndex
+        Debug.Print "After adding rowIndex:", rowIndex
+        Debug.Print "Number of elements in Collection:", verifikatRadnummer(verifikatSymbol).Count
+        rowIndex = rowIndex + 1
+    Else
+        ' Nytt verifikat har hittats
+        For Each radnummer In verifikatRadnummer(verifikatSymbol)
+        
+                ' Kontrollera om intäktskonto (3###) finns i kolumn T
+            If targetSheet.Range("T" & radnummer).Value Like "3###" Then
+                foundSell = True
+                a = foundSell
+            End If
+            
+            ' Kontrollera om moms 2611 finns i kolumn AA
+            If targetSheet.Range("T" & radnummer).Value Like "2611" Then
+                ' Om vi har hittat ett intäktskonto och moms 2611, markera detta som korrekt momsredovisning
+                    ' Hittade moms 2611
+                    foundSellVAT = True
+                    b = foundSellVAT
+            End If
+            targetSheet.Range("AB" & radnummer).Value = "OK"
+            
+            ' Om moms 264# finns, markera detta som felaktig momsredovisning
+            If targetSheet.Range("T" & radnummer).Value Like "264#" Then
+                ' Hittade felaktig moms 264# som ska vara för inköp
+                foundBuyVAT = True
+                c = foundBuyVAT
+            End If
+            
+            If ((a And b And Not (c)) Or (Not (a) And Not (b) And c) Or (Not (a) And b And c)) Then
+                targetSheet.Range("AB" & radnummer).Value = "OK"
+            Else
+                targetSheet.Range("AB" & radnummer).Value = "NOK"
+            End If
+            
+                
+            
+            
+        Next
+        
+        ' Återställ variabler för nästa verifikat
+        foundSell = False
+        foundSellVAT = False
+        foundBuyVAT = False
+        a = False
+        b = False
+        c = False
+        
+        ' Rensa dictionaryn för det nuvarande verifikatet
+        verifikatRadnummer.Remove verifikatSymbol
+        
+        ' Uppdatera till nästa verifikat
+        verifikatSymbol = raderDennaMånad(i, 1)
+        i = i - 1
+    End If
+    
+    ' Öka indexet för att gå till nästa rad
+    i = i + 1
+
+Loop Until i > UBound(raderDennaMånad, 1)
+
+' För den sista verifikatposten
+For Each radnummer In verifikatRadnummer(verifikatSymbol)
+
+               ' Kontrollera om intäktskonto (3###) finns i kolumn T
+        If targetSheet.Range("T" & radnummer).Value Like "3###" Then
+            foundSell = True
+            a = foundSell
+        End If
+        
+        ' Kontrollera om moms 2611 finns i kolumn AA
+        If targetSheet.Range("T" & radnummer).Value Like "2611" Then
+            ' Om vi har hittat ett intäktskonto och moms 2611, markera detta som korrekt momsredovisning
+                ' Hittade moms 2611
+                foundSellVAT = True
+                b = foundSellVAT
+        End If
+        targetSheet.Range("AB" & radnummer).Value = "OK"
+        
+        ' Om moms 264# finns, markera detta som felaktig momsredovisning
+        If targetSheet.Range("T" & radnummer).Value Like "264#" Then
+            ' Hittade felaktig moms 264# som ska vara för inköp
+            foundBuyVAT = True
+            c = foundBuyVAT
+        End If
+        
+        If ((a And b And Not (c)) Or (Not (a) And Not (b) And c) Or (Not (a) And b And c)) Then
+            targetSheet.Range("AB" & radnummer).Value = "OK"
+        Else
+            targetSheet.Range("AB" & radnummer).Value = "NOK"
+        End If
+            
+
+Next
 
 End Sub
+
+' Deklarera variabler för tillstånd
+Const start_state = 0
+Const sell_state = 1
+Const buy_moms_state = 2
+Const sell_moms_state = 3
+Const err_state = 4
+Const OK_state = 5
+Const momsrapport_found_state = 6
+
+' Initialisera tillståndet
+Dim state
+state = start_state
+
+' Loopa genom rader
+For Each rad In verifikatRadnummer(verifikatSymbol)
+    Select Case state
+        Case start_state
+            If rad Innehåller "3###" Then
+                state = sell_state
+            ElseIf rad Innehåller "264#" Then
+                state = buy_moms_state
+            ElseIf rad Innehåller "2611" Then
+                state = sell_moms_state
+            Else
+                state = err_state
+            End If
+        Case sell_state
+            If rad Innehåller "264#" Then
+                state = err_state
+            ElseIf rad Innehåller "2611" Then
+                state = OK_state
+            End If
+        Case buy_moms_state
+            If rad Innehåller "2611" Then
+                state = momsrapport_found_state
+            ElseIf rad Innehåller "264#" Then
+                state = buy_moms_state
+            ElseIf rad Innehåller "3###" Then
+                state = err_state
+            End If
+        Case sell_moms_state
+            If rad Innehåller "264#" Then
+                state = momsrapport_found_state
+            ElseIf rad Innehåller "3###" Then
+                state = OK_state
+            End If
+    End Select
+Next
+
